@@ -9,6 +9,8 @@ import yaml
 
 from natsort import natsorted
 
+KEY_CANCEL = 'q'
+
 def decide_image(img, options):
     cond = True
     while cond:
@@ -17,8 +19,6 @@ def decide_image(img, options):
         choice = chr(choice & 255)
         if choice in options:
             cond = False
-        if choice == 'q':
-            sys.exit('quiting')
     return choice
 
 
@@ -83,7 +83,10 @@ if __name__ == '__main__':
                 mask = cv2.resize(mask, (size, size))
                 img = np.concatenate((img, mask), axis=1)
                 choice = decide_image(img, ['s','d','k'])
-                choices[choice] += [str(image)]
+                if choice == KEY_CANCEL:
+                    break
+                else:
+                    choices[choice] += [str(image)]
         except Exception as e:
             # TODO: proper error handling
             print(e)
