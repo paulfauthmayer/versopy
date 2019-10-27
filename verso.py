@@ -1,7 +1,9 @@
 import argparse
+import logging
 import sys
 
 from pathlib import Path
+from collections import Counter
 
 import cv2
 import numpy as np
@@ -27,8 +29,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'path_to_images',
+        'img_paths',
         type=Path,
+        nargs='+'
     )
     parser.add_argument(
         '--output',
@@ -39,59 +42,54 @@ if __name__ == '__main__':
         nargs='+',
         default='s,d,k'
     )
-    parser.add_argument(
-        '--masks',
-        type=Path,
-    )
     args = parser.parse_args()
 
     size = 512
-    images = [
-        img
-        for img
-        in args.path_to_images.iterdir()
-        if img.suffix in VALID_IMG_SUFFIXES
-    ]
-    images = natsorted(images)
-
-    if args.masks:
-        masks = [
-            img
-            for img
-            in args.masks.iterdir()
+    
+    # get images from input paths
+    img_container = []
+    for i, path in enumerate(args.img_paths):
+        images = [
+            img for img in path.iterdir()
             if img.suffix in VALID_IMG_SUFFIXES
         ]
-        masks = [
-            mask
-            for mask
-            in masks
-            if mask.name in [
-                    img.name
-                    for img
-                    in images
-            ]
-        ]
-        masks = natsorted(masks)
+        img_container.append(images)
 
+    # Delete images that aren't in every provided directory
+    flattened = [img for img_list in img_container for img in img_list]
+    counts = Counter([img.name for img in flattened])
+    kept = [name for name in counts if counts[name] <= len(img_container)]
+    discarded = [name for name in counts if counts[name] < len(img_container)]
+    for img in discarded:
+        print(f'image {img} only found in {counts["img"]}/{len(img_container)} lists and is skipped')
+    img_container = [
+        natsorted([
+            img for img in img_list
+            if img.name in kept
+        ])
+        for img_list in img_container
+    ]
+    img_tuples = zip(*img_container)
+
+    # Show and process images
     choices = {key: [] for key in args.choices}
-
-    for i, image in enumerate(images):
+    for i, images in enumerate(img_tuples):
         try:
-            img = cv2.imread(str(image))
-            img = cv2.resize(img, (size, size))
-            if masks:
-                mask = cv2.imread(str(masks[i]))
-                mask = cv2.resize(mask, (size, size))
-                img = np.concatenate((img, mask), axis=1)
-                choice = decide_image(img, ['s','d','k'])
-                if choice == KEY_CANCEL:
-                    break
-                else:
-                    choices[choice] += [str(image)]
+            img_show = []
+            for img_name in images:
+                img = cv2.imread(str(img_name))
+                img = cv2.resize(img, (size, size))
+                img_show.append(img)
+            img_show = np.concatenate((img_show), axis=1)
+            choice = decide_image(img_show, args.choices)
+            if choice == KEY_CANCEL:
+                break
+            else:
+                choices[choice] += [str(img_name)]
         except Exception as e:
             # TODO: proper error handling
             print(e)
 
     if args.output:
         with open(args.output, 'w') as f:
-            yaml.dump(choices,f, sort_keys=False)
+            yaml.dump(choices, f)
