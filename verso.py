@@ -9,7 +9,8 @@ import yaml
 
 from natsort import natsorted
 
-KEY_CANCEL = 'q'
+from constants import KEY_CANCEL, VALID_IMG_SUFFIXES
+
 
 def decide_image(img, options):
     cond = True
@@ -17,7 +18,7 @@ def decide_image(img, options):
         cv2.imshow('IMG', img)
         choice = cv2.waitKey(0)
         choice = chr(choice & 255)
-        if choice in options:
+        if choice in [*options, KEY_CANCEL]:
             cond = False
     return choice
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
         img
         for img
         in args.path_to_images.iterdir()
-        if img.suffix in ['.jpg', '.png', '.tif', '.tiff']
+        if img.suffix in VALID_IMG_SUFFIXES
     ]
     images = natsorted(images)
 
@@ -58,7 +59,7 @@ if __name__ == '__main__':
             img
             for img
             in args.masks.iterdir()
-            if img.suffix in ['.jpg', '.png', '.tif', '.tiff']
+            if img.suffix in VALID_IMG_SUFFIXES
         ]
         masks = [
             mask
