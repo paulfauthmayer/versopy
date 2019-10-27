@@ -75,14 +75,18 @@ if __name__ == '__main__':
     choices = {key: [] for key in args.choices}
 
     for i, image in enumerate(images):
-       img = cv2.imread(str(image))
-       img = cv2.resize(img, (size, size))
-       if masks:
-           mask = cv2.imread(str(masks[i]))
-           mask = cv2.resize(mask, (size, size))
-           img = np.concatenate((img, mask), axis=1)
-           choice = decide_image(img, ['s','d','k'])
-           choices[choice] += [str(image)]
+        try:
+            img = cv2.imread(str(image))
+            img = cv2.resize(img, (size, size))
+            if masks:
+                mask = cv2.imread(str(masks[i]))
+                mask = cv2.resize(mask, (size, size))
+                img = np.concatenate((img, mask), axis=1)
+                choice = decide_image(img, ['s','d','k'])
+                choices[choice] += [str(image)]
+        except Exception as e:
+            # TODO: proper error handling
+            print(e)
 
     with open(args.output, 'w') as f:
         yaml.dump(choices,f, sort_keys=False)
