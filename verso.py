@@ -30,11 +30,11 @@ if __name__ == '__main__':
         type=Path,
     )
     parser.add_argument(
-        'output',
+        '--output',
         type=Path,
     )
     parser.add_argument(
-        'choices',
+        '--choices',
         nargs='+',
         default='s,d,k'
     )
@@ -88,5 +88,6 @@ if __name__ == '__main__':
             # TODO: proper error handling
             print(e)
 
-    with open(args.output, 'w') as f:
-        yaml.dump(choices,f, sort_keys=False)
+    if args.output:
+        with open(args.output, 'w') as f:
+            yaml.dump(choices,f, sort_keys=False)
